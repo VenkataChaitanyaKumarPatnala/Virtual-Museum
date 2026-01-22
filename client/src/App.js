@@ -1,23 +1,23 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Box, useGLTF, Text, PointerLockControls, OrbitControls, useTexture, Html } from '@react-three/drei';
+import { Box, useGLTF, PointerLockControls, OrbitControls, useTexture, Html } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Helper to handle GitHub Pages sub-directory paths for local assets
 const getAssetPath = (path) => {
   const publicUrl = process.env.PUBLIC_URL || '';
-  // Ensure we don't have double slashes
+  // Ensure we have a clean path without double slashes
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `${publicUrl}${cleanPath}`;
 };
 
-// --- DATA: Exhibit configuration ---
+// --- DATA: Exhibit configuration with all 10 models ---
 const exhibits = [
   {
     url: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb',
     position: [-15, 0, -10],
     info: 'Astronaut',
-    description: 'A detailed model of an astronaut suit, complete with reflective visor and life-support backpack. Designed for extravehicular activities in space.',
+    description: 'A detailed model of an astronaut suit, complete with reflective visor and life-support backpack.',
     scale: 2,
     boxSize: [3, 4.5, 2]
   },
@@ -25,7 +25,7 @@ const exhibits = [
     url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
     position: [-7.5, 2, -10],
     info: 'Helmet',
-    description: 'A battle-damaged sci-fi helmet. The weathering and scratches on its surface tell a story of past conflicts.',
+    description: 'A battle-damaged sci-fi helmet. The weathering tells a story of past space conflicts.',
     scale: 1,
     boxSize: [3, 3, 3],
     boxYOffset: -1.5
@@ -34,7 +34,7 @@ const exhibits = [
     url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/AntiqueCamera/glTF-Binary/AntiqueCamera.glb',
     position: [0, 0, -10],
     info: 'Vintage Camera',
-    description: 'A beautifully modeled vintage box camera mounted on a tripod. It represents a classic era of photography.',
+    description: 'A beautifully modeled vintage box camera representing a classic era of film photography.',
     scale: 0.5,
     boxSize: [2, 4, 3]
   },
@@ -42,7 +42,7 @@ const exhibits = [
     url: getAssetPath('/models/robot.glb'),
     position: [7.5, 2, -10],
     info: 'Deep Space Robot',
-    description: 'A humanoid robot designed for deep space exploration and maintenance tasks.',
+    description: 'A humanoid robot designed for deep space exploration and technical maintenance.',
     scale: 3,
     boxSize: [3, 4.25, 3],
     rotation: [0, Math.PI, 0], 
@@ -52,7 +52,7 @@ const exhibits = [
     url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/ToyCar/glTF-Binary/ToyCar.glb',
     position: [15, 0, -10],
     info: 'Vintage Race Car',
-    description: 'A classic collectible toy race car with a vibrant red paint job and detailed features.',
+    description: 'A classic collectible toy race car with a vibrant red paint job.',
     scale: 200,
     boxSize: [6, 4, 9]
   },
@@ -60,7 +60,7 @@ const exhibits = [
     url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/MosquitoInAmber/glTF-Binary/MosquitoInAmber.glb',
     position: [-15, 2, 10],
     info: 'Amber',
-    description: 'A prehistoric mosquito perfectly preserved in amber.',
+    description: 'A prehistoric mosquito perfectly preserved in fossilized tree resin.',
     scale: 30,
     boxSize: [3, 4, 3],
     boxYOffset: -2
@@ -69,7 +69,7 @@ const exhibits = [
     url: getAssetPath('/models/allosaurus.glb'),
     position: [-7.5, 2.2, 10],
     info: 'Armored Allosaurus',
-    description: 'A fearsome Allosaurus equipped with futuristic battle armor.',
+    description: 'A fearsome Allosaurus equipped with futuristic battle armor plates.',
     scale: 1,
     boxSize: [5, 5, 6.3],
     boxYOffset: -2
@@ -78,7 +78,7 @@ const exhibits = [
     url: getAssetPath('/models/giant_mech.glb'),
     position: [0, 2.1, 10],
     info: 'Giant Mech',
-    description: 'A colossal mech warrior, ready for interplanetary combat.',
+    description: 'A colossal mech warrior, ready for interplanetary planetary defense.',
     scale: 1.3,
     rotation: [0, Math.PI/-2.2, 0], 
     boxSize: [8, 6, 4],
@@ -88,7 +88,7 @@ const exhibits = [
     url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/DragonAttenuation/glTF-Binary/DragonAttenuation.glb',
     position: [7.5, 1, 10],
     info: 'Dragon',
-    description: 'A stylized, glass-like dragon figure that showcases light attenuation.',
+    description: 'A stylized dragon figure showcasing advanced light attenuation through crystal-like material.',
     scale: 1,
     boxSize: [6, 4, 6],
     boxYOffset: -1
@@ -97,22 +97,22 @@ const exhibits = [
     url: getAssetPath('/models/x_wing.glb'),
     position: [15, 2.5, 10],
     info: 'X-Wing Fighter',
-    description: 'A classic starfighter known for its distinctive S-foils.',
+    description: 'A classic starfighter known for its distinctive S-foils and speed.',
     scale: 1,
     boxSize: [6, 4, 11],
     boxYOffset: -2
   },
 ];
 
-// --- COMPONENT: Loading Screen with "L & M" Anchor Animation ---
+// --- COMPONENT: Loading Screen with simultaneous "L & M" reveal ---
 function LoadingScreen({ onStarted }) {
   const [phase, setPhase] = useState('initial'); 
   const virtualPrefix = ['V', 'I', 'R', 'T', 'U', 'A']; 
   const museumSuffix = ['U', 'S', 'E', 'U', 'M'];
 
   useEffect(() => {
-    const startTimer = setTimeout(() => setPhase('emerging'), 1000);
-    const endTimer = setTimeout(() => setPhase('complete'), 3500);
+    const startTimer = setTimeout(() => setPhase('emerging'), 1500);
+    const endTimer = setTimeout(() => setPhase('complete'), 4000);
     return () => { clearTimeout(startTimer); clearTimeout(endTimer); };
   }, []);
 
@@ -126,10 +126,10 @@ function LoadingScreen({ onStarted }) {
           font-family: 'Courier New', monospace; overflow: hidden;
         }
         .text-row { display: flex; font-size: 4.5rem; font-weight: 900; letter-spacing: 0.15em; align-items: center; }
-        .anchor { color: #fff; z-index: 10; position: relative; }
+        .anchor { color: #fff; z-index: 10; position: relative; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
         .emerging-letter {
           display: inline-block; opacity: 0; width: 0;
-          transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
           overflow: hidden; text-align: center;
         }
         .active .emerging-letter { opacity: 1; width: 1.1em; }
@@ -164,7 +164,7 @@ function LoadingScreen({ onStarted }) {
   );
 }
 
-// --- COMPONENT: Exhibit ---
+// --- COMPONENT: Exhibit Logic ---
 function Exhibit({ modelData, onSelect, isNavigating, onShowDescription }) {
   const { scene } = useGLTF(modelData.url);
   const [hovered, setHovered] = useState(false);
@@ -193,7 +193,7 @@ function Exhibit({ modelData, onSelect, isNavigating, onShowDescription }) {
   );
 }
 
-// --- COMPONENT: Controls ---
+// --- COMPONENT: Player Controller ---
 function PlayerControls({ exhibits, activeDescription, setActiveDescription }) {
   const { camera } = useThree();
   const controlsRef = useRef();
@@ -204,6 +204,14 @@ function PlayerControls({ exhibits, activeDescription, setActiveDescription }) {
   const velocity = new THREE.Vector3();
   const direction = new THREE.Vector3();
 
+  const allObstacles = exhibits.map(ex => {
+    const size = ex.boxSize || [3, 4, 3];
+    return new THREE.Box3().setFromCenterAndSize(
+      new THREE.Vector3(ex.position[0], (size[1]/2) + (ex.boxYOffset || 0), ex.position[2]),
+      new THREE.Vector3(size[0], size[1], size[2])
+    );
+  });
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       switch (e.code) {
@@ -212,6 +220,7 @@ function PlayerControls({ exhibits, activeDescription, setActiveDescription }) {
         case 'ArrowDown': case 'KeyS': moveBackward.current = true; break;
         case 'ArrowRight': case 'KeyD': moveRight.current = true; break;
         case 'KeyC': setActiveDescription(null); break;
+        default: break;
       }
     };
     const handleKeyUp = (e) => {
@@ -220,6 +229,7 @@ function PlayerControls({ exhibits, activeDescription, setActiveDescription }) {
         case 'ArrowLeft': case 'KeyA': moveLeft.current = false; break;
         case 'ArrowDown': case 'KeyS': moveBackward.current = false; break;
         case 'ArrowRight': case 'KeyD': moveRight.current = false; break;
+        default: break;
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -232,6 +242,7 @@ function PlayerControls({ exhibits, activeDescription, setActiveDescription }) {
 
   useFrame((state, delta) => {
     if (controlsRef.current?.isLocked) {
+      const prevPos = camera.position.clone();
       velocity.x -= velocity.x * 10.0 * delta;
       velocity.z -= velocity.z * 10.0 * delta;
       direction.z = Number(moveForward.current) - Number(moveBackward.current);
@@ -241,12 +252,21 @@ function PlayerControls({ exhibits, activeDescription, setActiveDescription }) {
       if (moveLeft.current || moveRight.current) velocity.x -= direction.x * 60.0 * delta;
       controlsRef.current.moveRight(-velocity.x * delta);
       controlsRef.current.moveForward(-velocity.z * delta);
+      
+      const playerBox = new THREE.Box3().setFromCenterAndSize(camera.position, new THREE.Vector3(1.2, 2, 1.2));
+      for (const obstacle of allObstacles) {
+        if (playerBox.intersectsBox(obstacle)) { camera.position.copy(prevPos); break; }
+      }
+      if (activeDescription) {
+        const dist = camera.position.distanceTo(new THREE.Vector3(...activeDescription.position));
+        if (dist > 12) setActiveDescription(null);
+      }
     }
   });
   return <PointerLockControls ref={controlsRef} />;
 }
 
-// --- COMPONENT: Scene ---
+// --- COMPONENT: Main Scene Component ---
 function MuseumScene({ onShowDescription, activeDescription, setActiveDescription }) {
   const { camera } = useThree();
   const [target, setTarget] = useState(null);
@@ -261,7 +281,6 @@ function MuseumScene({ onShowDescription, activeDescription, setActiveDescriptio
   const [floorTex, wallTex, ceilTex] = textures;
 
   useEffect(() => {
-    // Apply wrapping to all loaded textures safely
     textures.forEach(t => {
       if (t) {
         t.wrapS = t.wrapT = THREE.RepeatWrapping; 
@@ -309,7 +328,7 @@ function MuseumScene({ onShowDescription, activeDescription, setActiveDescriptio
   );
 }
 
-// --- MAIN APP ---
+// --- MAIN APP COMPONENT ---
 export default function App() {
   const [tourStarted, setTourStarted] = useState(false);
   const [activeDescription, setActiveDescription] = useState(null);
